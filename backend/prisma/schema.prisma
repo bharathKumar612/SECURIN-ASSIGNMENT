@@ -1,0 +1,155 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model CVE {
+  id               String          @id
+  sourceIdentifier String
+  published        DateTime
+  lastModified     DateTime
+  vulnStatus       String
+  descriptions     Description[]
+  metrics          Metrics?
+  weaknesses       Weakness[]
+  configurations   Configuration[]
+  references       Reference[]
+}
+
+model Description {
+  id    String @id @default(uuid())
+  lang  String
+  value String @db.LongText
+  cve   CVE    @relation(fields: [cveId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  cveId String
+}
+
+model Metrics {
+  id            String          @id @default(uuid())
+  cve           CVE             @relation(fields: [cveId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  cveId         String          @unique
+  cvssMetricV2  CvssMetricV2[]
+  cvssMetricV30 CvssMetricV30[]
+  cvssMetricV31 CvssMetricV31[]
+}
+
+enum CvssTypeEnum {
+  Primary
+  Secondary
+}
+
+model CvssMetricV2 {
+  id                    String       @id @default(uuid())
+  source                String
+  type                  CvssTypeEnum
+  vectorString          String
+  baseScore             Float
+  accessVector          String
+  accessComplexity      String
+  authentication        String
+  confidentialityImpact String
+  integrityImpact       String
+  availabilityImpact    String
+  baseSeverity          String
+  exploitabilityScore   Float
+  impactScore           Float
+  metrics               Metrics      @relation(fields: [metricsId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  metricsId             String
+}
+
+model CvssMetricV30 {
+  id                    String       @id @default(uuid())
+  source                String
+  type                  CvssTypeEnum
+  vectorString          String
+  accessVector          String
+  exploitabilityScore   Float // 
+  impactScore           Float // 
+  metrics               Metrics      @relation(fields: [metricsId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  metricsId             String
+  baseScore             Float
+  baseSeverity          String
+  attackVector          String
+  attackComplexity      String
+  confidentialityImpact String
+  integrityImpact       String
+  availabilityImpact    String
+}
+
+model CvssMetricV31 {
+  id                    String       @id @default(uuid())
+  source                String
+  type                  CvssTypeEnum
+  vectorString          String
+  accessVector          String
+  exploitabilityScore   Float // 
+  impactScore           Float // 
+  metrics               Metrics      @relation(fields: [metricsId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  metricsId             String
+  baseScore             Float
+  baseSeverity          String
+  attackVector          String
+  attackComplexity      String
+  confidentialityImpact String
+  integrityImpact       String
+  availabilityImpact    String
+}
+
+model Weakness {
+  id           String                @id @default(uuid())
+  source       String
+  type         String
+  descriptions WeaknessDescription[]
+  cve          CVE                   @relation(fields: [cveId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  cveId        String
+}
+
+model WeaknessDescription {
+  id         String   @id @default(uuid())
+  lang       String
+  value      String   @db.LongText
+  weakness   Weakness @relation(fields: [weaknessId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  weaknessId String
+}
+
+model Configuration {
+  id    String       @id @default(uuid())
+  nodes ConfigNode[]
+  cve   CVE          @relation(fields: [cveId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  cveId String
+}
+
+enum ConfigOperatorEnum {
+  AND
+  OR
+}
+
+model ConfigNode {
+  id            String             @id @default(uuid())
+  operator      ConfigOperatorEnum
+  negate        Boolean
+  cpeMatches    CpeMatch[]
+  configuration Configuration      @relation(fields: [configId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  configId      String
+}
+
+model CpeMatch {
+  id              String     @id @default(uuid())
+  vulnerable      Boolean
+  criteria        String
+  matchCriteriaId String
+  configNode      ConfigNode @relation(fields: [configNodeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  configNodeId    String
+}
+
+model Reference {
+  id     String @id @default(uuid())
+  url    String @db.LongText
+  source String @db.LongText
+  cve    CVE    @relation(fields: [cveId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  cveId  String
+}
