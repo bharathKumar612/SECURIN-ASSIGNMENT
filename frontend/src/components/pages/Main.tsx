@@ -23,6 +23,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import {
   CVEEntry,
   CVEResponse,
@@ -46,15 +49,29 @@ const Main: React.FC = () => {
   );
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [publishedStartDate, setPublishedStartDate] = useState<string>("");
+  const [publishedEndDate, setPublishedEndDate] = useState<string>("");
+  const [modifiedStartDate, setModifiedStartDate] = useState<string>("");
+  const [modifiedEndDate, setModifiedEndDate] = useState<string>("");
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
+      const params = new URLSearchParams({
+        resultsPerPage: resultsPerPage.toString(),
+        startIndex: (pageNumber - 1).toString(),
+      });
+
+      if (publishedStartDate)
+        params.append("publishedStartDate", publishedStartDate);
+      if (publishedEndDate) params.append("publishedEndDate", publishedEndDate);
+      if (modifiedStartDate)
+        params.append("modifiedStartDate", modifiedStartDate);
+      if (modifiedEndDate) params.append("modifiedEndDate", modifiedEndDate);
+
       const response = await axios.get<CVEResponse>(
-        `${BASE_URL}/cve/list?resultsPerPage=${resultsPerPage}&startIndex=${
-          pageNumber - 1
-        }`
+        `${BASE_URL}/cve/list?${params.toString()}`
       );
 
       setData(response.data.cves);
@@ -65,7 +82,54 @@ const Main: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [pageNumber, resultsPerPage]);
+  }, [
+    pageNumber,
+    resultsPerPage,
+    publishedStartDate,
+    publishedEndDate,
+    modifiedStartDate,
+    modifiedEndDate,
+  ]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const page = parseInt(params.get("page") || "1");
+    const perPage = parseInt(
+      params.get("resultsPerPage") || RESULTS_PER_PAGE_OPTIONS[0].toString()
+    );
+    const pubStart = params.get("publishedStartDate") || "";
+    const pubEnd = params.get("publishedEndDate") || "";
+    const modStart = params.get("modifiedStartDate") || "";
+    const modEnd = params.get("modifiedEndDate") || "";
+
+    setPageNumber(page);
+    setResultsPerPage(perPage as ResultsPerPage);
+    setPublishedStartDate(pubStart);
+    setPublishedEndDate(pubEnd);
+    setModifiedStartDate(modStart);
+    setModifiedEndDate(modEnd);
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    params.set("page", pageNumber.toString());
+    params.set("resultsPerPage", resultsPerPage.toString());
+    if (publishedStartDate)
+      params.set("publishedStartDate", publishedStartDate);
+    if (publishedEndDate) params.set("publishedEndDate", publishedEndDate);
+    if (modifiedStartDate) params.set("modifiedStartDate", modifiedStartDate);
+    if (modifiedEndDate) params.set("modifiedEndDate", modifiedEndDate);
+
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.pushState({}, "", newUrl);
+  }, [
+    pageNumber,
+    resultsPerPage,
+    publishedStartDate,
+    publishedEndDate,
+    modifiedStartDate,
+    modifiedEndDate,
+  ]);
 
   useEffect(() => {
     void fetchData();
@@ -103,6 +167,89 @@ const Main: React.FC = () => {
         <CardTitle>CVE Records</CardTitle>
       </CardHeader>
       <CardContent>
+        <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="publishedStartDate">Published Date Range</Label>
+              <div className="flex space-x-2">
+                <div className="flex-1">
+                  <Input
+                    type="date"
+                    id="publishedStartDate"
+                    value={publishedStartDate}
+                    onChange={(e) => {
+                      setPublishedStartDate(e.target.value);
+                      setPageNumber(1);
+                    }}
+                    placeholder="Start date"
+                  />
+                </div>
+                <div className="flex-1">
+                  <Input
+                    type="date"
+                    id="publishedEndDate"
+                    value={publishedEndDate}
+                    onChange={(e) => {
+                      setPublishedEndDate(e.target.value);
+                      setPageNumber(1);
+                    }}
+                    placeholder="End date"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="modifiedStartDate">
+                Last Modified Date Range
+              </Label>
+              <div className="flex space-x-2">
+                <div className="flex-1">
+                  <Input
+                    type="date"
+                    id="modifiedStartDate"
+                    value={modifiedStartDate}
+                    onChange={(e) => {
+                      setModifiedStartDate(e.target.value);
+                      setPageNumber(1);
+                    }}
+                    placeholder="Start date"
+                  />
+                </div>
+                <div className="flex-1">
+                  <Input
+                    type="date"
+                    id="modifiedEndDate"
+                    value={modifiedEndDate}
+                    onChange={(e) => {
+                      setModifiedEndDate(e.target.value);
+                      setPageNumber(1);
+                    }}
+                    placeholder="End date"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="md:col-span-2 flex justify-end space-x-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setPublishedStartDate("");
+                setPublishedEndDate("");
+                setModifiedStartDate("");
+                setModifiedEndDate("");
+                setPageNumber(1);
+              }}
+            >
+              Clear Filters
+            </Button>
+          </div>
+        </div>
+
         <div className="w-full">
           <div className="rounded-md border">
             <ScrollArea className="h-[60vh]">
