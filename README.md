@@ -88,6 +88,14 @@ Ensure you have the following installed on your system:
 
 # Frontend
 
+### CVE List UI
+
+![CVE List Page](images/list.jpg)
+
+### Single CVE UI
+
+![Single CVE Page](images/single.jpg)
+
 # Frontend Project
 
 This project is built using **React** with **TypeScript**, powered by **Vite** for a fast and optimized development experience. The UI is designed using **Tailwind CSS** and **shadcn**, providing a sleek and modern look. The frontend interacts with the backend using **Axios** to handle API calls.
